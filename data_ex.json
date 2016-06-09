@@ -1,0 +1,14 @@
+[
+  {
+    "site": "identifier for site",
+    "version": "0",
+    "key": "actual key to use to generate password",
+    "length": 24
+  },
+  {
+    "site": "example_site_2",
+    "version": "0",
+    "key": "example__other_key",
+    "length": 24
+  }
+]
