@@ -1,18 +1,20 @@
 #! /usr/bin/env ruby
 
+require 'optparse'
 require 'JSON'
 require 'OpenSSL'
 require 'Base64'
+require 'Pathname'
 
-STORE = "data.json"
+STORE = "#{Dir.home}/.hashpass/data.json"
 
 def usage
   puts "Usage: \tget.rb -l\n\tget.rb <site> <secret>"
   exit 1
 end
 
-def load
-  data_file = File.open( STORE, "r" )
+def load opts
+  data_file = File.open( opts[:source], "r" )
   data_raw = data_file.read
   data = JSON.parse( data_raw, { symbolize_names: true } )
 end
@@ -21,33 +23,71 @@ def get_obj data, name
   data.select { |i| i[:site] == name }[0]
 end
 
-command = ARGV[0]
-if !command then
-  usage
-end
+options = { source: STORE,
+          }
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: get.rb [options] SITE_ID"
 
-if command == "-l" && ARGV.length == 1 then
-  data = load
-  puts data.map {|obj| obj[:site] + " @ " + obj[:version] }
-elsif ARGV.length == 2 then
-  data = load
+  opts.separator "Commands:"
 
-  name = ARGV[0]
-  secret = ARGV[1]
-
-  obj = get_obj data, name
-
-  if !obj then
-    puts "No data found."
-    exit 2
+  opts.on("-g", "--get", "(default) Get password") do |g|
+    options[:get] = g
   end
 
-  input = [ secret, name, obj[:version] ].join( "_" )
+  opts.on("-l", "--list", "List site id's and versions") do |v|
+    options[:list] = v
+  end
 
-  hasher = OpenSSL::Digest::SHA256.new
-  base64 = Base64.encode64( hasher.digest( input ) )
+  opts.separator ""
+  opts.separator "Universal options:"
 
-  puts base64.slice( 0, obj[:length] )
-else
-  usage
+  opts.on("-s", "--source PATH", "Get data file from PATH") do |s|
+    options[:source] = s
+  end
+
+  opts.on("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
+
+  opts.separator ""
+  opts.separator "Get options:"
+
+  opts.on("-k", "--key KEY", "Secret key used for password generation") do |k|
+    options[:key] = k
+  end
+
+end
+
+parser.parse!
+
+if options[:get] && options[:list] then
+  puts parser.help
+  exit
+end
+
+if options[:list] then
+  data = load options
+  puts data.map {|obj| obj[:site] + " @ " + obj[:version] }
+# elsif ARGV.length == 2 then
+#   data = load
+#
+#   name = ARGV[0]
+#   secret = ARGV[1]
+#
+#   obj = get_obj data, name
+#
+#   if !obj then
+#     puts "No data found."
+#     exit 2
+#   end
+#
+#   input = [ secret, name, obj[:version] ].join( "_" )
+#
+#   hasher = OpenSSL::Digest::SHA256.new
+#   base64 = Base64.encode64( hasher.digest( input ) )
+#
+#   puts base64.slice( 0, obj[:length] )
+# else
+#   usage
 end
