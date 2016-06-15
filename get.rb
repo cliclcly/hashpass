@@ -24,7 +24,9 @@ def get_obj data, name
 end
 
 options = { source: STORE,
+            get: true,
           }
+
 parser = OptionParser.new do |opts|
   opts.banner = "Usage: get.rb [options] SITE_ID"
 
@@ -36,6 +38,11 @@ parser = OptionParser.new do |opts|
 
   opts.on("-l", "--list", "List site id's and versions") do |v|
     options[:list] = v
+    options[:get] = false;
+  end
+
+  opts.on("-e", "--encrypt", "Encrypt source file") do |e|
+    options[:encrypt] = e
   end
 
   opts.separator ""
@@ -56,7 +63,6 @@ parser = OptionParser.new do |opts|
   opts.on("-k", "--key KEY", "Secret key used for password generation") do |k|
     options[:key] = k
   end
-
 end
 
 parser.parse!
@@ -69,25 +75,27 @@ end
 if options[:list] then
   data = load options
   puts data.map {|obj| obj[:site] + " @ " + obj[:version] }
-# elsif ARGV.length == 2 then
-#   data = load
-#
-#   name = ARGV[0]
-#   secret = ARGV[1]
-#
-#   obj = get_obj data, name
-#
-#   if !obj then
-#     puts "No data found."
-#     exit 2
-#   end
-#
-#   input = [ secret, name, obj[:version] ].join( "_" )
-#
-#   hasher = OpenSSL::Digest::SHA256.new
-#   base64 = Base64.encode64( hasher.digest( input ) )
-#
-#   puts base64.slice( 0, obj[:length] )
-# else
-#   usage
+end
+
+if options[:get] then
+  unless options[:key] then parser.help; exit end
+
+  data = load options
+
+  name = ARGV[0]
+  secret = options[:key]
+
+  obj = get_obj data, name
+
+  if !obj then
+    puts "No data found"
+    exit 2
+  end
+
+  input = [ secret, name, obj[:version] ].join( "_" )
+
+  hasher = OpenSSL::Digest::SHA256.new
+  base64 = Base64.encode64( hasher.digest( input ) )
+
+  puts base64.slice( 0, obj[:length] )
 end

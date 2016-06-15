@@ -9,6 +9,7 @@
     "site": "example_site_2",
     "version": "0",
     "key": "example__other_key",
-    "length": 24
+    "length": 24,
+    "iterations": 100
   }
 ]
